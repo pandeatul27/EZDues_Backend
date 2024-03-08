@@ -8,8 +8,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
-    console.log(`[+] Received a GET request at /, with queries:`); 
-    console.table(req.query)
+    console.log(`[+] Received a GET request at /, with queries:`);
+    console.table(req.query);
 
     return res.send("<pre>Hello World!\nThis is how you create a route.</pre>");
 });
