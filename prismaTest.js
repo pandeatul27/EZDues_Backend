@@ -1,27 +1,50 @@
 const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const bcrypt = require('bcrypt');
+
+//For Password Hashing
+const prisma = new PrismaClient().$extends({
+  query: {
+    department: {
+      $allOperations({ operation, args, query }) {
+        if (['create', 'update'].includes(operation) && args.data['pswdDept']) {
+          args.data['pswdDept'] = bcrypt.hashSync(args.data['pswdDept'], 10)
+        }
+        return query(args)
+      }
+    }
+  }
+});
 
 async function main() {
     //Searching
-    // const users = await prisma.student.findMany({
+    // const dept = await prisma.department.findUnique({
     //     where:{
-    //         name:{startsWith:"Atul"},
-    //         email:{contains : "cs"}
+    //         deptId:'Lib',
     //     },
     // })
+
+    //For Checking if the Password is valid or not
+    const stored_hash = dept.pswdDept
+    console.log(stored_hash)
+    guess="abcdef"
+    bcrypt.compare(guess, stored_hash, function(err, res) {
+      if (err) {
+        // Handle error
+        console.error('Error comparing passwords:', err);
+        return;
+      }
     
-    // console.log(users)
+      if (res) {
+        console.log('Password is correct');
+      } else {
+        console.log('Password is incorrect');
+      }
+    });
 
-    //creation
-    // const dept = await prisma.department.create({
-    //     data:{  
-    //         deptId:"Lib",
-    //         deptName:"Library"
-    //     },
-    // })
+    //Delete
+    // await prisma.department.deleteMany()
 
-    // console.log(dept)
-
+    //Create
     // const fine=await prisma.fines.create({
     //     data:{
     //         studentRollNumber:"2101CS88",
