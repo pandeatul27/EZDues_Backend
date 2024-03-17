@@ -17,13 +17,14 @@ const prisma = new PrismaClient().$extends({
 
 async function main() {
     //Searching
-    // const dept = await prisma.department.findUnique({
-    //     where:{
-    //         deptId:'Lib',
-    //     },
-    // })
+    const dept = await prisma.department.findUnique({
+        where:{
+            deptId:'Lib',
+        },
+    })
 
     //For Checking if the Password is valid or not
+
     const stored_hash = dept.pswdDept
     console.log(stored_hash)
     guess="abcdef"
@@ -42,18 +43,18 @@ async function main() {
     });
 
     //Delete
-    // await prisma.department.deleteMany()
+    await prisma.admin.deleteMany()
 
     //Create
-    // const fine=await prisma.fines.create({
-    //     data:{
-    //         studentRollNumber:"2101CS88",
-    //         departmentDeptId:"Lib",
-    //         reason:"Random reason",
-    //         deadline:new Date('2024-05-25T12:00:00Z')//YYYY-MM-DD
-    //     },
-    // })
-    // console.log(fine)
+    const fine=await prisma.fines.create({
+        data:{
+            studentRollNumber:"2101CS88",
+            departmentDeptId:"Lib",
+            reason:"Random reason",
+            deadline:new Date('2024-05-25T12:00:00Z')//YYYY-MM-DD
+        },
+    })
+    console.log(fine)
   }
 
   
