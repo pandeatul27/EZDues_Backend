@@ -14,14 +14,16 @@ datasource db {
 }
 
 model Student {
-  rollNumber String     @id
-  name       String
-  email      String     @unique
-  branch     String
-  batch      Int
-  role       Role       @default(BTech)
-  fines      Fines[]    @relation("Fines")
-  requests   Requests[] @relation("Requests")
+  rollNumber  String     @id
+  name        String
+  email       String     @unique
+  branch      String
+  batch       Int
+  role        Role       @default(BTech)
+  canRequest  Boolean    @default(false)
+  noDuesGiven Boolean    @default(false)
+  fines       Fines[]    @relation("Fines")
+  requests    Requests[] @relation("Requests")
 }
 
 enum Role {
@@ -31,10 +33,12 @@ enum Role {
 }
 
 model Department {
-  deptId   String     @id
-  deptName String     @unique
-  fines    Fines[]    @relation("Fines")
-  requests Requests[] @relation("Requests")
+  deptId      String     @id
+  username    String     @unique
+  autoApprove Boolean    @default(false)
+  pswdDept    String     @unique
+  fines       Fines[]    @relation("Fines")
+  requests    Requests[] @relation("Requests")
 }
 
 model Fines {
@@ -65,7 +69,7 @@ model Requests {
   Department        Department @relation("Requests", fields: [departmentDeptId], references: [deptId])
   departmentDeptId  String
   dateOfRequest     DateTime   @default(now())
-  approved          Boolean    @default(false)
+  isApproved        Boolean    @default(false)
   dateOfApproval    DateTime
 }
 
@@ -73,6 +77,13 @@ model Payments {
   paymentId     String   @id @default(uuid())
   paymentProof  String
   dateOfPayment DateTime @default(now())
-  Fines         Fines   @relation(fields: [finesFineId], references: [fineId])
+  Fines         Fines    @relation(fields: [finesFineId], references: [fineId])
   finesFineId   String
+}
+
+model Admin {
+  adminId      String  @id @default(uuid())
+  username     String  @unique
+  pswdAdmin    String  @unique
+  isSuperAdmin Boolean @default(false)
 }

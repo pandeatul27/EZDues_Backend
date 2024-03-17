@@ -6,6 +6,8 @@ CREATE TABLE `Student` (
     `branch` VARCHAR(191) NOT NULL,
     `batch` INTEGER NOT NULL,
     `role` ENUM('BTech', 'MTech', 'PhD') NOT NULL DEFAULT 'BTech',
+    `canRequest` BOOLEAN NOT NULL DEFAULT false,
+    `noDuesGiven` BOOLEAN NOT NULL DEFAULT false,
 
     UNIQUE INDEX `Student_email_key`(`email`),
     PRIMARY KEY (`rollNumber`)
@@ -14,9 +16,12 @@ CREATE TABLE `Student` (
 -- CreateTable
 CREATE TABLE `Department` (
     `deptId` VARCHAR(191) NOT NULL,
-    `deptName` VARCHAR(191) NOT NULL,
+    `username` VARCHAR(191) NOT NULL,
+    `autoApprove` BOOLEAN NOT NULL DEFAULT false,
+    `pswdDept` VARCHAR(191) NOT NULL,
 
-    UNIQUE INDEX `Department_deptName_key`(`deptName`),
+    UNIQUE INDEX `Department_username_key`(`username`),
+    UNIQUE INDEX `Department_pswdDept_key`(`pswdDept`),
     PRIMARY KEY (`deptId`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -40,7 +45,7 @@ CREATE TABLE `Requests` (
     `studentRollNumber` VARCHAR(191) NOT NULL,
     `departmentDeptId` VARCHAR(191) NOT NULL,
     `dateOfRequest` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    `approved` BOOLEAN NOT NULL DEFAULT false,
+    `isApproved` BOOLEAN NOT NULL DEFAULT false,
     `dateOfApproval` DATETIME(3) NOT NULL,
 
     PRIMARY KEY (`requestId`)
@@ -54,6 +59,18 @@ CREATE TABLE `Payments` (
     `finesFineId` VARCHAR(191) NOT NULL,
 
     PRIMARY KEY (`paymentId`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `Admin` (
+    `adminId` VARCHAR(191) NOT NULL,
+    `username` VARCHAR(191) NOT NULL,
+    `pswdAdmin` VARCHAR(191) NOT NULL,
+    `isSuperAdmin` BOOLEAN NOT NULL DEFAULT false,
+
+    UNIQUE INDEX `Admin_username_key`(`username`),
+    UNIQUE INDEX `Admin_pswdAdmin_key`(`pswdAdmin`),
+    PRIMARY KEY (`adminId`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- AddForeignKey
