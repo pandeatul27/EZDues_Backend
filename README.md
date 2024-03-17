@@ -46,6 +46,10 @@
 4. The above command takes care of 2 things:
    - Makes appropriate changes to the database.
    - generates `@prisma/client` which has typing and functions for each model as ORM.
+5. The `prisma/seed.js` file creates a Super Admin whenever we migrate prisma or we can do it manually by command:
+    ```console
+   $ npx prisma db seed
+   ```
 
 ## Conventions you might wanna abide by.
 
