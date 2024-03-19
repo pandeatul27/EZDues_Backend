@@ -12,7 +12,12 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+model Admin{
+  username      String   @unique
+  password      String   
+  IsSuperAdmin  Boolean  @default(false)
 
+}
 model Student {
   rollNumber String     @id
   name       String
@@ -35,6 +40,8 @@ model Department {
   deptName String     @unique
   fines    Fines[]    @relation("Fines")
   requests Requests[] @relation("Requests")
+  username String     @unique
+  password String    
 }
 
 model Fines {
