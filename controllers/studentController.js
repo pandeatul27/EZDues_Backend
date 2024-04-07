@@ -1,21 +1,18 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 async function getFines(req, res) {
-    try{
-        const {rollNumber}= req.params;
+    try {
+        const { rollNumber } = req.params;
 
-        const fines= await prisma.Fines.findMany({
-            where :{
-                studentRollNumber: rollNumber
-            }
+        const fines = await prisma.Fines.findMany({
+            where: {
+                studentRollNumber: rollNumber,
+            },
         });
 
         res.status(200).json(fines);
-
-
-    }catch(error)
-    {
+    } catch (error) {
         console.error("Error fetching fines:", error);
         res.status(500).json({ error: "Internal server error" });
     }
@@ -40,32 +37,32 @@ async function addPaymentProof(req, res) {
         const { paymentProof } = req.body;
 
         // Update the payment proof for the specified fine
-        const updatedFine = await prisma.fines.update({
+        const updatedFine = await prisma.Fines.update({
             where: {
-                fineId
+                fineId,
             },
             data: {
                 paymentProof,
                 student: {
                     connect: {
-                        studentRollNumber
-                    }
-                }
-            }
+                        studentRollNumber,
+                    },
+                },
+            },
         });
 
-        res.status(200).json({ message: "Payment proof added successfully.", updatedFine });
+        res.status(200).json({
+            message: "Payment proof added successfully.",
+            updatedFine,
+        });
     } catch (error) {
         console.error("Error adding payment proof:", error);
         res.status(500).json({ error: "Internal server error" });
     }
 }
 
-
-
 module.exports = {
     getFines,
     initiateRequest,
-    addPaymentProof
-   
+    addPaymentProof,
 };
