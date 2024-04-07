@@ -36,7 +36,7 @@ model Department {
   deptId      String     @id
   username    String     @unique
   autoApprove Boolean    @default(false)
-  pswdDept    String     @unique
+  pswdDept    String 
   fines       Fines[]    @relation("Fines")
   requests    Requests[] @relation("Requests")
 }
@@ -84,6 +84,6 @@ model Payments {
 model Admin {
   adminId      String  @id @default(uuid())
   username     String  @unique
-  pswdAdmin    String  @unique
+  pswdAdmin    String
   isSuperAdmin Boolean @default(false)
 }
