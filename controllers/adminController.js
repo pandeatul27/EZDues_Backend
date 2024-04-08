@@ -39,7 +39,7 @@ async function createAdmin(req, res) {
             });
         }
 
-        //creatinn admin
+        //creating admin
 
         const newAdmin = await prisma.Admin.create({
             data: {
