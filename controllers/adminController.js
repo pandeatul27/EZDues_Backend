@@ -139,7 +139,7 @@ async function bulkRegistration(req, res) {
 
 async function registerStudents(req, res) {
     try {
-        const { students } = req.body; // Assuming the request body contains an array of student objects
+        const students = req.body; // Assuming the request body contains an array of student objects
 
         // Process each student and assign them to departments based on their role
         const registrations = await Promise.all(
