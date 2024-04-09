@@ -2,7 +2,7 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 async function getFines(req, res) {
-    const deptId = decodeURI(req.params.deptId);
+    const deptId = req.auth.deptId;
     try {
         const fines = await prisma.Fines.findMany({
             where: {
@@ -85,7 +85,7 @@ async function addFine(req, res) {
 }
 async function fineApproval(req, res) {
     const { studentRoll, fineId } = req.params;
-    const deptId = decodeURI(req.params.deptId);
+    const deptId = req.auth.deptId;
     try {
         const payments = await prisma.Payments.findMany({
             where: {
@@ -111,7 +111,7 @@ async function fineApproval(req, res) {
     }
 }
 async function getRequests(req, res) {
-    const deptId = decodeURI(req.params.deptId);
+    const deptId = req.auth.deptId;
     try {
         const requests = await prisma.Requests.findMany({
             where: {
@@ -128,7 +128,7 @@ async function getRequests(req, res) {
 }
 async function requestApproval(req, res) {
     const { studentRoll, reqId } = req.params;
-    const deptId = decodeURI(req.params.deptId);
+    const deptId = req.auth.deptId;
 
     try {
         const requests = await prisma.Requests.findMany({
@@ -167,7 +167,7 @@ async function requestApproval(req, res) {
     }
 }
 async function approvalBulk(req, res) {
-    const deptId = decodeURI(req.params.deptId);
+    const deptId = req.auth.deptId;
     try {
         const requests = await prisma.Requests.findMany({
             where: {
@@ -218,7 +218,7 @@ async function approvalBulk(req, res) {
     }
 }
 async function setAutoApprove(req, res) {
-    const deptId = decodeURI(req.params.deptId);
+    const deptId = req.auth.deptId;
     try {
         let department = await prisma.Department.findMany({
             where: {
@@ -246,6 +246,37 @@ async function setAutoApprove(req, res) {
     }
 }
 
+async function login(req, res) {
+    const { username, password } = req.body;
+    if (username === undefined || password === undefined) {
+        res.status(422).json("Enter username and password");
+        return;
+    }
+
+    const user = await prisma.Department.findUnique({
+        where: {
+            username,
+        },
+    });
+
+    if (!user) {
+        res.status(422).json("No such username found");
+        return;
+    }
+
+    if (password !== user.pswdDept) {
+        res.status(401).json("Incorrect password");
+        return;
+    }
+
+    const token = jwt.sign({ deptId: user.deptId, type: "department" }, config.secret, {
+        expiresIn: "24h"
+    });
+    res.status(200).json({
+        token
+    });
+}
+
 module.exports = {
     getFines,
     getStudent,
@@ -256,4 +287,6 @@ module.exports = {
     requestApproval,
     approvalBulk,
     setAutoApprove,
+    login,
 };
+/* vi: set et sw=4: */

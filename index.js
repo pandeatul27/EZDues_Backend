@@ -1,5 +1,7 @@
 const express = require("express");
 const fileUpload = require("express-fileupload");
+const { expressjwt: jwt } = require("express-jwt");
+const config = require("./config.json");
 const adminRoutes = require("./routes/adminRoutes");
 const studentRoutes = require("./routes/studentRoutes");
 const departmentRoutes = require("./routes/departmentRoutes");
@@ -11,6 +13,13 @@ const app = express();
 app.use(fileUpload({ useTempFiles: true, tempFileDir: "/tmp/" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use(
+  jwt({
+    secret: config.secret,
+    algorithms: ["HS256"],
+  }).unless({ path: ["/admin/login", "/department/login"] })
+);
 
 app.use("/admin", adminRoutes);
 app.use("/student", studentRoutes);

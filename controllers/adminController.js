@@ -1,6 +1,8 @@
 const { PrismaClient } = require("@prisma/client");
 const fs = require("fs");
 const csvParser = require("csv-parser");
+const jwt = require("jsonwebtoken");
+const config = require("../config.json");
 
 const prisma = new PrismaClient();
 
@@ -282,6 +284,37 @@ async function autoApprove(req, res) {
     }
 }
 
+async function login(req, res) {
+    const { username, password } = req.body;
+    if (username === undefined || password === undefined) {
+        res.status(422).json("Enter username and password");
+        return;
+    }
+
+    const admin = await prisma.Admin.findUnique({
+        where: {
+            username,
+        },
+    });
+
+    if (!admin) {
+        res.status(422).json("No such username found");
+        return;
+    }
+
+    if (password !== admin.pswdAdmin) {
+        res.status(401).json("Incorrect password");
+        return;
+    }
+
+    const token = jwt.sign({ type: "admin" }, config.secret, {
+        expiresIn: "24h"
+    });
+    res.status(200).json({
+        token
+    });
+}
+
 // other admin-related controller functions...
 
 module.exports = {
@@ -292,5 +325,7 @@ module.exports = {
     addFinesBulk,
     makeFinalYearEligible,
     autoApprove,
+    login,
     // export other admin-related controller functions...
 };
+/* vi: set et sw=4: */
