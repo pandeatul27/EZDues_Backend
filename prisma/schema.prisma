@@ -48,6 +48,7 @@ model Fines {
   Department        Department @relation("Fines", fields: [departmentDeptId], references: [deptId])
   departmentDeptId  String
   dateOfCreation    DateTime   @default(now())
+  amount            Int        @default(0)
   deadline          DateTime
   reason            String     @db.VarChar(300)
   damageProof       String?

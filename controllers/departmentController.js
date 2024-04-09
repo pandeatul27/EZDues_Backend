@@ -2,9 +2,9 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 async function getFines(req, res) {
-    const deptId = req.params.deptId;
+    const deptId = decodeURI(req.params.deptId);
     try {
-        const fines = await prisma.fines.findMany({
+        const fines = await prisma.Fines.findMany({
             where: {
                 departmentDeptId: deptId,
             },
@@ -28,13 +28,14 @@ async function getFines(req, res) {
             .filter((fine) => fine.status !== "Approved")
             .reduce((acc, fine) => acc + fine.amount, 0);
         const paidFinesPendingApprovalCount = fines.filter(
-            (fine) => fine.status === "Pending" && fine.paymentOfFine.length > 0
+            (fine) => fine.status === "Pending"
         ).length; // this is a length as count hai paymentoffine given matlab pending needs to be approved
         const noDuesRequestsPendingApprovalCount = requests.filter(
-            (requests) => !request.isApproved
+            (request) => !request.isApproved
         ).length;
 
         res.json({
+            totalAmount,
             settledFinesAmount,
             unsettledFinesAmount,
             paidFinesPendingApprovalCount,
@@ -55,7 +56,7 @@ async function getStudent(req, res) {
     }
 }
 async function getSpecificStudent(req, res) {
-    const id = req.params.id;
+    const id = req.params.rollNo;
     try {
         const student = await prisma.student.findUnique({
             where: {
@@ -83,7 +84,8 @@ async function addFine(req, res) {
     }
 }
 async function fineApproval(req, res) {
-    const { deptId, studentRoll, fineId } = req.params;
+    const { studentRoll, fineId } = req.params;
+    const deptId = decodeURI(req.params.deptId);
     try {
         const payments = await prisma.Payments.findMany({
             where: {
@@ -108,8 +110,8 @@ async function fineApproval(req, res) {
         });
     }
 }
-async function getRequest(req, res) {
-    const deptId = req.params;
+async function getRequests(req, res) {
+    const deptId = decodeURI(req.params.deptId);
     try {
         const requests = await prisma.Requests.findMany({
             where: {
@@ -125,7 +127,8 @@ async function getRequest(req, res) {
     }
 }
 async function requestApproval(req, res) {
-    const { deptId, studentRoll, reqId } = req.params;
+    const { studentRoll, reqId } = req.params;
+    const deptId = decodeURI(req.params.deptId);
 
     try {
         const requests = await prisma.Requests.findMany({
@@ -164,32 +167,49 @@ async function requestApproval(req, res) {
     }
 }
 async function approvalBulk(req, res) {
-    const deptId = req.params.deptId;
+    const deptId = decodeURI(req.params.deptId);
     try {
-        // lets get all fines
-        const fines = await prisma.Fines.findMany({
+        const requests = await prisma.Requests.findMany({
             where: {
                 departmentDeptId: deptId,
             },
         });
-
-        const allFinesPaid = fines.every((fine) => fine.status === "Approved");
-
-        if (allFinesPaid) {
-            //all requests
-            //will be approved via todays
-            const updatedRequest = await prisma.Requests.updateMany({
+        requests.forEach(async (request) => {
+            const student = await prisma.Student.findUnique({
                 where: {
-                    departmentDeptId: deptId,
-                },
-                data: {
-                    isApproved: true,
-                    dateOfApproval: new Date(),
+                    rollNumber: request.studentRollNumber,
                 },
             });
-
-            res.json({ message: "Bulk approval successful", updatedFine });
-        }
+            const fines = await prisma.Fines.findMany({
+                where: {
+                    departmentDeptId: deptId,
+                    studentRollNumber: student.rollNumber,
+                },
+            });
+            let allFinesPaid;
+            if (fines.length == 0) {
+                allFinesPaid = true;
+            } else {
+                allFinesPaid = fines.every(
+                    (fine) => fine.status === "Approved"
+                );
+            }
+            console.log(fines.length, allFinesPaid);
+            if (allFinesPaid) {
+                //all requests
+                //will be approved via todays
+                const updatedRequest = await prisma.Requests.updateMany({
+                    where: {
+                        requestId: request.requestId,
+                    },
+                    data: {
+                        isApproved: true,
+                        dateOfApproval: new Date(),
+                    },
+                });
+            }
+        });
+        res.json({ message: "Bulk approval successful" });
     } catch (error) {
         console.error("Error approving requests in bulk:", error);
         res.status(500).json({
@@ -198,9 +218,14 @@ async function approvalBulk(req, res) {
     }
 }
 async function setAutoApprove(req, res) {
-    const deptId = req.params.deptId;
+    const deptId = decodeURI(req.params.deptId);
     try {
-        const department = await prisma.Department.update({
+        let department = await prisma.Department.findMany({
+            where: {
+                deptId: deptId,
+            },
+        });
+        department = await prisma.Department.update({
             where: {
                 deptId: deptId,
             },
@@ -209,10 +234,7 @@ async function setAutoApprove(req, res) {
             },
         });
         if (department.autoApprove) {
-            await approveBulk(req, res);
-            res.json({
-                message: "Auto-approval turned on and bulk approval successful",
-            });
+            await approvalBulk(req, res);
         } else {
             res.json({ message: "Auto-approval turned off" });
         }
@@ -230,7 +252,7 @@ module.exports = {
     getSpecificStudent,
     addFine,
     fineApproval,
-    getRequest,
+    getRequests,
     requestApproval,
     approvalBulk,
     setAutoApprove,
