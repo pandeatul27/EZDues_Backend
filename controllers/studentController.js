@@ -22,8 +22,25 @@ async function initiateRequest(req, res) {
     try {
         const { rollNumber } = req.params;
 
-        // ****!!! doubt- ye wala click nahi kar raha kaise kare- will update tomorrow
+        const fines = await prisma.Fines.findMany({
+            where: {
+                studentRollNumber: rollNumber,
+            },
+        });
 
+        const requests = [];
+        fines.forEach((fine) => {
+            requests.push({
+                    Student: { connect: { rollNumber } },
+                    studentRollNumber: rollNumber,
+                    Department: { connect: { deptId: fine.departmentDeptId } },
+                    departmentDeptId: fine.departmentDeptId,
+                    dateOfRequest: new Date(),
+                    isApproved: false,
+                    dateOfApproval: null,
+            });
+        });
+        await prisma.Requests.createMany({ data: requests });
         res.status(200).json({ message: "Request initiated successfully." });
     } catch (error) {
         console.error("Error initiating request:", error);
@@ -66,3 +83,4 @@ module.exports = {
     initiateRequest,
     addPaymentProof,
 };
+/* vim: set et sw=4: */

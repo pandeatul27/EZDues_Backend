@@ -42,7 +42,7 @@ async function createAdmin(req, res) {
             });
         }
 
-        //creatinn admin
+        //creating admin
 
         const newAdmin = await prisma.Admin.create({
             data: {
@@ -237,7 +237,7 @@ async function autoApprove(req, res) {
     try {
         const students = await prisma.Student.findMany();
 
-        // need to create requests for each combinationss of students and departmenst
+        // need to create requests for each combinations of students and departments
 
         const requests = [];
         students.forEach((student) => {

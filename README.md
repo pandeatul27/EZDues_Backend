@@ -19,7 +19,7 @@
 
 - Apply migrations to database by running the following command:
   ```console
-  $ npm run prisma migrate dev
+  $ npx prisma migrate dev
   ```
 
 ## How to run?
