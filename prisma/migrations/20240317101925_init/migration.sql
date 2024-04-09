@@ -21,7 +21,6 @@ CREATE TABLE `Department` (
     `pswdDept` VARCHAR(191) NOT NULL,
 
     UNIQUE INDEX `Department_username_key`(`username`),
-    UNIQUE INDEX `Department_pswdDept_key`(`pswdDept`),
     PRIMARY KEY (`deptId`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -69,7 +68,6 @@ CREATE TABLE `Admin` (
     `isSuperAdmin` BOOLEAN NOT NULL DEFAULT false,
 
     UNIQUE INDEX `Admin_username_key`(`username`),
-    UNIQUE INDEX `Admin_pswdAdmin_key`(`pswdAdmin`),
     PRIMARY KEY (`adminId`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
