@@ -1,4 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
+const fs = require("fs");
+const csvParser = require("csv-parser");
+
 const prisma = new PrismaClient();
 
 const BTechDepartments = [
@@ -93,7 +96,7 @@ async function addDepartments(req, res) {
 async function bulkRegistration(req, res) {
     try {
         // Check if a CSV file was uploaded
-        if (!req.file) {
+        if (!req.files.file) {
             return res.status(400).json({ error: "No CSV file uploaded" });
         }
 
@@ -103,7 +106,7 @@ async function bulkRegistration(req, res) {
         const students = [];
 
         // Read the uploaded CSV file
-        fs.createReadStream(req.file.path)
+        fs.createReadStream(req.files.file.tempFilePath)
             .pipe(csvParser())
             .on("data", (row) => {
                 // Process each row of the CSV file
@@ -124,7 +127,7 @@ async function bulkRegistration(req, res) {
                 });
 
                 // Remove the uploaded CSV file
-                fs.unlinkSync(req.file.path);
+                fs.unlinkSync(req.files.file.tempFilePath);
 
                 res.status(201).json(createdStudents);
             });
@@ -172,8 +175,8 @@ async function addFinesBulk(req, res) {
 
         const createdFines = await prisma.Fines.createMany({
             data: fines.map((fine) => ({
-                Student: { connect: { rollNumber: fine.studentRollNumber } },
-                Department: { connect: { deptId: fine.departmentDeptId } },
+                studentRollNumber: fine.studentRollNumber,
+                departmentDeptId: fine.departmentDeptId,
                 dateOfCreation: new Date(),
                 deadline: fine.deadline,
                 reason: fine.reason,
@@ -256,18 +259,18 @@ async function autoApprove(req, res) {
             }
             departments.forEach((department) => {
                 requests.push({
-                    Student: { connect: { rollNumber: student.rollNumber } },
-                    Department: { connect: { deptId: department } },
                     studentRollNumber: student.rollNumber,
                     departmentDeptId: department,
                     dateOfRequest: new Date(),
-                    dateOfApproval: null,
+                    dateOfApproval: new Date(0),
                     isApproved: false,
                 });
             });
         });
-
-        await prisma.Requests.createMany({ data: requests });
+        console.log(requests);
+        await prisma.Requests.createMany({
+            data: requests,
+        });
 
         res.status(200).json({
             message:
