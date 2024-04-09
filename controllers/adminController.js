@@ -32,7 +32,7 @@ async function createAdmin(req, res) {
 
         const requestingAdmin = await prisma.Admin.findUnique({
             where: {
-                username: req.headers.username, // assuming we pass the username o' adminn
+                username: req.headers.username, // assuming we pass the username of admin
             },
         });
 
@@ -214,7 +214,7 @@ async function makeFinalYearEligible(req, res) {
                 batch: finalYearBatchYear,
             },
         });
-        const updatedStudent = await prisma.Student.updateMany({
+        await prisma.Student.updateMany({
             where: {
                 rollNumber: {
                     in: finalYearStudents.map((student) => student.rollNumber),

@@ -18,6 +18,23 @@ async function getFines(req, res) {
     }
 }
 
+async function getRequests(req, res) {
+    try {
+        const { rollNumber } = req.params;
+
+        const requests = await prisma.Requests.findMany({
+            where: {
+                studentRollNumber: rollNumber,
+            },
+        });
+
+        res.status(200).json(requests);
+    } catch (error) {
+        console.error("Error fetching requests:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+}
+
 async function initiateRequest(req, res) {
     try {
         const { rollNumber } = req.params;
@@ -63,6 +80,7 @@ async function addPaymentProof(req, res) {
 
 module.exports = {
     getFines,
+    getRequests,
     initiateRequest,
     addPaymentProof,
 };

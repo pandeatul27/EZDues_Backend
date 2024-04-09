@@ -19,3 +19,4 @@ app.use("/department", departmentRoutes);
 app.listen(PORT, () => {
     console.log(`[+] Server listening on PORT: ${PORT}`);
 });
+/* vi: set et sw=4: */
