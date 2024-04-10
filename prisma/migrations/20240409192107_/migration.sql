@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE `fines` ADD COLUMN `amount` INTEGER NOT NULL DEFAULT 0;
