@@ -1,10 +1,22 @@
 const { PrismaClient } = require("@prisma/client");
+const bcrypt = require("bcrypt");
 const fs = require("fs");
 const csvParser = require("csv-parser");
 const jwt = require("jsonwebtoken");
 const config = require("../config.json");
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient().$extends({
+  query: {
+    admin: {
+      $allOperations({ operation, args, query }) {
+        if (["create", "update"].includes(operation) && args.data["pswdAdmin"]) {
+          args.data["pswdAdmin"] = bcrypt.hashSync(args.data["pswdAdmin"], config.saltRounds)
+        }
+        return query(args)
+      }
+    }
+  }
+});
 
 const BTechDepartments = [
     "Hostel",
@@ -29,19 +41,17 @@ const otherDepartments = [
 ];
 
 async function createAdmin(req, res) {
+    if (!req.auth.isSuperAdmin) {
+        return res.status(403).json({
+            error: "Only super admins are allowed to create admin",
+        });
+    }
+
     try {
         const { username, password } = req.body;
 
-        const requestingAdmin = await prisma.Admin.findUnique({
-            where: {
-                username: req.headers.username, // assuming we pass the username of admin
-            },
-        });
-
-        if (!requestingAdmin || !requestingAdmin.isSuperAdmin) {
-            return res.status(403).json({
-                error: "Only super admins are allowed to create admin",
-            });
+        if (username === undefined || password === undefined) {
+            return res.status(422).json("Enter username and password");
         }
 
         //creating admin
@@ -58,7 +68,7 @@ async function createAdmin(req, res) {
         res.status(201).json(newAdmin);
     } catch (error) {
         console.error("Error creating the admin", error);
-        res.status(500).json({ error: "Internal server issue" });
+        res.sendStatus(500);
     }
 }
 
@@ -91,7 +101,7 @@ async function addDepartments(req, res) {
         res.status(201).json(newDepartment);
     } catch (error) {
         console.error("Error adding department:", error);
-        res.status(500).json({ error: "Internal server error" });
+        res.sendStatus(500);
     }
 }
 
@@ -135,7 +145,7 @@ async function bulkRegistration(req, res) {
             });
     } catch (error) {
         console.error("Error in bulk registration:", error);
-        res.status(500).json({ error: "Internal server error" });
+        res.sendStatus(500);
     }
 }
 
@@ -168,7 +178,7 @@ async function registerStudents(req, res) {
         res.status(201).json(registrations.filter(Boolean)); // Filter out null values and return the successful registrations
     } catch (error) {
         console.error("Error registering students:", error);
-        res.status(500).json({ error: "Internal server error" });
+        res.sendStatus(500);
     }
 }
 async function addFinesBulk(req, res) {
@@ -190,7 +200,7 @@ async function addFinesBulk(req, res) {
         res.status(201).json(createdFines);
     } catch (error) {
         console.error("Error adding fine in bulk:", error);
-        res.status(500).json({ error: "Internal server error" });
+        res.sendStatus(500);
     }
 }
 
@@ -231,7 +241,7 @@ async function makeFinalYearEligible(req, res) {
         });
     } catch (error) {
         console.error("Error making final year students eligible:", error);
-        res.status(500).json({ error: "Internal server error" });
+        res.sendStatus(500);
     }
 }
 
@@ -280,15 +290,14 @@ async function autoApprove(req, res) {
         });
     } catch (error) {
         console.error("Error initiating auto approval:", error);
-        res.status(500).json({ error: "Internal server error" });
+        res.sendStatus(500);
     }
 }
 
 async function login(req, res) {
     const { username, password } = req.body;
     if (username === undefined || password === undefined) {
-        res.status(422).json("Enter username and password");
-        return;
+        return res.status(422).json("Enter username and password");
     }
 
     const admin = await prisma.Admin.findUnique({
@@ -298,20 +307,24 @@ async function login(req, res) {
     });
 
     if (!admin) {
-        res.status(422).json("No such username found");
-        return;
+        return res.status(422).json("No such username found");
     }
 
-    if (password !== admin.pswdAdmin) {
-        res.status(401).json("Incorrect password");
-        return;
-    }
-
-    const token = jwt.sign({ type: "admin" }, config.secret, {
-        expiresIn: "24h"
-    });
-    res.status(200).json({
-        token
+    await bcrypt.compare(password, admin.pswdAdmin, (err, result) => {
+        console.log(err, result);
+        if (err) {
+            console.log(err);
+            res.sendStatus(500);
+        } else if (result) {
+            const token = jwt.sign({ isSuperAdmin: admin.isSuperAdmin, type: "admin" }, config.secret, {
+                expiresIn: "24h"
+            });
+            res.status(200).json({
+                token
+            });
+        } else {
+            res.status(401).json("Incorrect password");
+        }
     });
 }
 

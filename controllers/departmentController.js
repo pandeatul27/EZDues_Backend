@@ -1,7 +1,20 @@
 const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
 const jwt = require("jsonwebtoken");
 const config = require("../config.json");
+const bcrypt = require("bcrypt");
+
+const prisma = new PrismaClient().$extends({
+  query: {
+    department: {
+      $allOperations({ operation, args, query }) {
+        if (["create", "update"].includes(operation) && args.data["pswdDept"]) {
+          args.data["pswdDept"] = bcrypt.hashSync(args.data["pswdDept"], config.saltRounds)
+        }
+        return query(args)
+      }
+    }
+  }
+});
 
 async function getFines(req, res) {
     const deptId = req.auth.deptId;
@@ -150,7 +163,7 @@ async function requestApproval(req, res) {
             (fine) => fine.status === "Approved"
         );
         if (allFinesApproved) {
-            //updatingg
+            //updating
             const updatedRequest = await prisma.Requests.updateMany({
                 where: {
                     studentRollNumber: studentRoll,
@@ -255,27 +268,31 @@ async function login(req, res) {
         return;
     }
 
-    const user = await prisma.Department.findUnique({
+    const department = await prisma.Department.findUnique({
         where: {
             username,
         },
     });
 
-    if (!user) {
+    if (!department) {
         res.status(422).json("No such username found");
         return;
     }
 
-    if (password !== user.pswdDept) {
-        res.status(401).json("Incorrect password");
-        return;
-    }
-
-    const token = jwt.sign({ deptId: user.deptId, type: "department" }, config.secret, {
-        expiresIn: "24h"
-    });
-    res.status(200).json({
-        token
+    await bcrypt.compare(password, department.pswdDept, (err, result) => {
+        if (err) {
+            console.log(err);
+            res.sendStatus(500);
+        } else if (result) {
+            const token = jwt.sign({ deptId: user.deptId, type: "department" }, config.secret, {
+                expiresIn: "24h"
+            });
+            res.status(200).json({
+                token
+            });
+        } else {
+            res.status(401).json("Incorrect password");
+        }
     });
 }
 
