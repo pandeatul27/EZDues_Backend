@@ -40,7 +40,7 @@
 2. Populate the file `prisma/schema.prisma` with appropriate models.
 3. Run the following command:
    ```console
-   $ npm run prisma migrate dev --name <NAME>
+   $ npx prisma migrate dev --name <NAME>
    ```
    Here _NAME_ is the name of the migration you wish to give.
 4. The above command takes care of 2 things:
