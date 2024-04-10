@@ -1,6 +1,7 @@
 const express = require("express");
 const fileUpload = require("express-fileupload");
 const { expressjwt: jwt } = require("express-jwt");
+const cookieParser = require("cookie-parser");
 const config = require("./config.json");
 const adminRoutes = require("./routes/adminRoutes");
 const studentRoutes = require("./routes/studentRoutes");
@@ -13,12 +14,16 @@ const app = express();
 app.use(fileUpload({ useTempFiles: true, tempFileDir: "/tmp/" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+const getToken = req => req.cookies.idtoken;
 
 app.use(
-  jwt({
-    secret: config.secret,
-    algorithms: ["HS256"],
-  }).unless({ path: ["/admin/login", "/department/login"] })
+    jwt({
+        secret: config.secret,
+        getToken,
+        algorithms: ["HS256"],
+    }).unless({ path: ["/admin/login", "/department/login"] })
 );
 
 app.use("/admin", adminRoutes);

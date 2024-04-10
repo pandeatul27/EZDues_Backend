@@ -311,7 +311,6 @@ async function login(req, res) {
     }
 
     await bcrypt.compare(password, admin.pswdAdmin, (err, result) => {
-        console.log(err, result);
         if (err) {
             console.log(err);
             res.sendStatus(500);
@@ -319,9 +318,8 @@ async function login(req, res) {
             const token = jwt.sign({ isSuperAdmin: admin.isSuperAdmin, type: "admin" }, config.secret, {
                 expiresIn: "24h"
             });
-            res.status(200).json({
-                token
-            });
+            res.cookie("idtoken", token, { httpOnly: true });
+            res.sendStatus(200);
         } else {
             res.status(401).json("Incorrect password");
         }

@@ -287,9 +287,8 @@ async function login(req, res) {
             const token = jwt.sign({ deptId: user.deptId, type: "department" }, config.secret, {
                 expiresIn: "24h"
             });
-            res.status(200).json({
-                token
-            });
+            res.cookie("idtoken", token, { httpOnly: true });
+            res.sendStatus(200);
         } else {
             res.status(401).json("Incorrect password");
         }
