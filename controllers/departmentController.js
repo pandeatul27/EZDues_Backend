@@ -1,5 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+const jwt = require("jsonwebtoken");
+const config = require("../config.json");
 
 async function getFines(req, res) {
     const deptId = req.auth.deptId;
@@ -18,7 +20,7 @@ async function getFines(req, res) {
 
         // for this we need  amount of that fine in the Fines table right?
         //next we also need to relate the db of requests with db of fines ?
-        // i am assuing yes to both and doing it
+        // i am assuming yes to both and doing it
 
         const totalAmount = fines.reduce((acc, fine) => acc + fine.amount, 0);
         const settledFinesAmount = fines
