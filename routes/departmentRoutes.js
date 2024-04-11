@@ -3,16 +3,13 @@ const router = express.Router();
 const departmentController = require("../controllers/departmentController");
 
 router.use((req, res, next) => {
-	if (req.auth === undefined || req.auth.type === "department") next();
-	else res.sendStatus(401);
+    if (req.auth === undefined || req.auth.type === "department") next();
+    else res.sendStatus(401);
 });
 
 router.get("/get-fines", departmentController.getFines);
 router.get("/get-students", departmentController.getStudent);
-router.get(
-    "/get-students/:rollNo",
-    departmentController.getSpecificStudent
-);
+router.get("/get-students/:rollNo", departmentController.getSpecificStudent);
 router.post("/add-fine", departmentController.addFine);
 router.put(
     "/fine-approval/:studentRoll/:fineId",

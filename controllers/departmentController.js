@@ -4,16 +4,22 @@ const config = require("../config.json");
 const bcrypt = require("bcrypt");
 
 const prisma = new PrismaClient().$extends({
-  query: {
-    department: {
-      $allOperations({ operation, args, query }) {
-        if (["create", "update"].includes(operation) && args.data["pswdDept"]) {
-          args.data["pswdDept"] = bcrypt.hashSync(args.data["pswdDept"], config.saltRounds)
-        }
-        return query(args)
-      }
-    }
-  }
+    query: {
+        department: {
+            $allOperations({ operation, args, query }) {
+                if (
+                    ["create", "update"].includes(operation) &&
+                    args.data["pswdDept"]
+                ) {
+                    args.data["pswdDept"] = bcrypt.hashSync(
+                        args.data["pswdDept"],
+                        config.saltRounds
+                    );
+                }
+                return query(args);
+            },
+        },
+    },
 });
 
 async function getFines(req, res) {
@@ -24,7 +30,7 @@ async function getFines(req, res) {
                 departmentDeptId: deptId,
             },
         });
-
+        console.log(fines);
         const requests = await prisma.Requests.findMany({
             where: {
                 departmentDeptId: deptId,
@@ -35,26 +41,33 @@ async function getFines(req, res) {
         //next we also need to relate the db of requests with db of fines ?
         // i am assuming yes to both and doing it
 
-        const totalAmount = fines.reduce((acc, fine) => acc + fine.amount, 0);
-        const settledFinesAmount = fines
+        const totalFine = fines.reduce((acc, fine) => acc + fine.amount, 0);
+        console.log(totalFine);
+        const settledFine = fines
             .filter((fine) => fine.status === "Approved")
             .reduce((acc, fine) => acc + fine.amount, 0);
-        const unsettledFinesAmount = fines
+        const unsettledFine = fines
             .filter((fine) => fine.status !== "Approved")
             .reduce((acc, fine) => acc + fine.amount, 0);
-        const paidFinesPendingApprovalCount = fines.filter(
-            (fine) => fine.status === "Pending"
+        const settledNumberOfFines = fines.filter(
+            (fine) => fine.status === "Approved"
         ).length; // this is a length as count hai paymentoffine given matlab pending needs to be approved
-        const noDuesRequestsPendingApprovalCount = requests.filter(
+        const pendingNoDues = requests.filter(
             (request) => !request.isApproved
         ).length;
-
+        const pendingFines = fines.filter(
+            (fine) => fine.status === "Pending"
+        ).length;
+        const numberOfFines = fines.length;
+        console.log(pendingNoDues, pendingFines);
         res.json({
-            totalAmount,
-            settledFinesAmount,
-            unsettledFinesAmount,
-            paidFinesPendingApprovalCount,
-            noDuesRequestsPendingApprovalCount,
+            totalFine,
+            settledFine,
+            unsettledFine,
+            numberOfFines,
+            settledNumberOfFines,
+            pendingNoDues,
+            pendingFines,
             fines,
         });
     } catch (error) {
@@ -262,12 +275,12 @@ async function setAutoApprove(req, res) {
 }
 
 async function login(req, res) {
-    const { username, password } = req.body;
+    const { deptName, username, password } = req.body;
     if (username === undefined || password === undefined) {
         res.status(422).json("Enter username and password");
         return;
     }
-
+    console.log(username, password);
     const department = await prisma.Department.findUnique({
         where: {
             username,
@@ -278,15 +291,18 @@ async function login(req, res) {
         res.status(422).json("No such username found");
         return;
     }
-
     await bcrypt.compare(password, department.pswdDept, (err, result) => {
         if (err) {
             console.log(err);
             res.sendStatus(500);
         } else if (result) {
-            const token = jwt.sign({ deptId: user.deptId, type: "department" }, config.secret, {
-                expiresIn: "24h"
-            });
+            const token = jwt.sign(
+                { deptId: department.deptId, type: "department" },
+                config.secret,
+                {
+                    expiresIn: "24h",
+                }
+            );
             res.cookie("idtoken", token, { httpOnly: true });
             res.sendStatus(200);
         } else {

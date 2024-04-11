@@ -6,16 +6,22 @@ const jwt = require("jsonwebtoken");
 const config = require("../config.json");
 
 const prisma = new PrismaClient().$extends({
-  query: {
-    admin: {
-      $allOperations({ operation, args, query }) {
-        if (["create", "update"].includes(operation) && args.data["pswdAdmin"]) {
-          args.data["pswdAdmin"] = bcrypt.hashSync(args.data["pswdAdmin"], config.saltRounds)
-        }
-        return query(args)
-      }
-    }
-  }
+    query: {
+        admin: {
+            $allOperations({ operation, args, query }) {
+                if (
+                    ["create", "update"].includes(operation) &&
+                    args.data["pswdAdmin"]
+                ) {
+                    args.data["pswdAdmin"] = bcrypt.hashSync(
+                        args.data["pswdAdmin"],
+                        config.saltRounds
+                    );
+                }
+                return query(args);
+            },
+        },
+    },
 });
 
 const BTechDepartments = [
@@ -94,7 +100,7 @@ async function addDepartments(req, res) {
             data: {
                 deptId: deptName,
                 username,
-                pswdDept: password,
+                pswdDept: bcrypt.hashSync(password, config.saltRounds),
             },
         });
 
@@ -315,9 +321,13 @@ async function login(req, res) {
             console.log(err);
             res.sendStatus(500);
         } else if (result) {
-            const token = jwt.sign({ isSuperAdmin: admin.isSuperAdmin, type: "admin" }, config.secret, {
-                expiresIn: "24h"
-            });
+            const token = jwt.sign(
+                { isSuperAdmin: admin.isSuperAdmin, type: "admin" },
+                config.secret,
+                {
+                    expiresIn: "24h",
+                }
+            );
             res.cookie("idtoken", token, { httpOnly: true });
             res.sendStatus(200);
         } else {
