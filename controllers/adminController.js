@@ -194,6 +194,8 @@ async function addFinesBulk(req, res) {
         const createdFines = await prisma.Fines.createMany({
             data: fines.map((fine) => ({
                 studentRollNumber: fine.studentRollNumber,
+                amount: fine.amount,
+                studentEmail: fine.studentEmail,
                 departmentDeptId: fine.departmentDeptId,
                 dateOfCreation: new Date(),
                 deadline: fine.deadline,
@@ -278,6 +280,7 @@ async function autoApprove(req, res) {
             departments.forEach((department) => {
                 requests.push({
                     studentRollNumber: student.rollNumber,
+                    studentEmail: student.email,
                     departmentDeptId: department,
                     dateOfRequest: new Date(),
                     dateOfApproval: new Date(0),
