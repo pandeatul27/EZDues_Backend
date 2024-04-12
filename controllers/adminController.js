@@ -65,7 +65,7 @@ async function createAdmin(req, res) {
         const newAdmin = await prisma.Admin.create({
             data: {
                 username,
-                pswdAdmin: password,
+                pswdAdmin: bcrypt.hashSync(password, config.saltRounds),
                 isSuperAdmin: false, // the admin created now will not be superadmin
                 // we will have only one superadmin
             },
@@ -311,7 +311,6 @@ async function login(req, res) {
             username,
         },
     });
-
     if (!admin) {
         return res.status(422).json("No such username found");
     }
