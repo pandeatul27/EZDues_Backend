@@ -7,7 +7,7 @@ async function getFines(req, res) {
 
         const fines = await prisma.Fines.findMany({
             where: {
-                email,
+                studentEmail: email,
             },
         });
 
@@ -24,7 +24,7 @@ async function getRequests(req, res) {
 
         const requests = await prisma.Requests.findMany({
             where: {
-                email,
+                studentEmail: email,
             },
         });
 
@@ -41,7 +41,7 @@ async function initiateRequest(req, res) {
 
         const fines = await prisma.Fines.findMany({
              where: {
-                 email,
+                 studentEmail: email,
              },
          });
 

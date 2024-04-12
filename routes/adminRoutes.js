@@ -4,12 +4,10 @@ const adminController = require("../controllers/adminController");
 const { expressjwt: jwt } = require("express-jwt");
 const config = require("../config.json");
 
-const getToken = req => req.cookies.idtoken;
-
 router.use(
     jwt({
         secret: config.secret,
-        getToken,
+        getToken: req => req.cookies.idtoken,
         algorithms: ["HS256"],
     }).unless({ path: ["/admin/login"] })
 );
