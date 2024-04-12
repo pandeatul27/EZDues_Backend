@@ -86,7 +86,7 @@ async function getStudent(req, res) {
 async function getSpecificStudent(req, res) {
     const id = req.params.rollNo;
     try {
-        const student = await prisma.student.findUnique({
+        const student = await prisma.Student.findUnique({
             where: {
                 rollNumber: id,
             },

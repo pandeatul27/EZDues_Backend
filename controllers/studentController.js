@@ -3,11 +3,11 @@ const prisma = new PrismaClient();
 
 async function getFines(req, res) {
     try {
-        const { rollNumber } = req.params;
+        const { email } = req.auth.preferred_username;
 
         const fines = await prisma.Fines.findMany({
             where: {
-                studentRollNumber: rollNumber,
+                email,
             },
         });
 
@@ -20,11 +20,11 @@ async function getFines(req, res) {
 
 async function getRequests(req, res) {
     try {
-        const { rollNumber } = req.params;
+        const { email } = req.auth.preferred_username;
 
         const requests = await prisma.Requests.findMany({
             where: {
-                studentRollNumber: rollNumber,
+                email,
             },
         });
 
@@ -37,11 +37,11 @@ async function getRequests(req, res) {
 
 async function initiateRequest(req, res) {
     try {
-        const { rollNumber } = req.params;
+        const { email } = req.auth.preferred_username;
 
         const fines = await prisma.Fines.findMany({
              where: {
-                 studentRollNumber: rollNumber,
+                 email,
              },
          });
 
@@ -68,7 +68,8 @@ async function initiateRequest(req, res) {
 
 async function addPaymentProof(req, res) {
     try {
-        const { fineId, studentRollNumber } = req.params;
+        const { email } = req.auth.preferred_username;
+        const { fineId } = req.params;
         const { paymentProof } = req.body;
 
         // Update the payment proof for the specified fine
@@ -80,7 +81,7 @@ async function addPaymentProof(req, res) {
                 paymentProof,
                 student: {
                     connect: {
-                        studentRollNumber,
+                        email,
                     },
                 },
             },

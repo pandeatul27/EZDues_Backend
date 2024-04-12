@@ -1,6 +1,17 @@
 const express = require("express");
 const router = express.Router();
 const departmentController = require("../controllers/departmentController");
+const { expressjwt: jwt } = require("express-jwt");
+const config = require("../config.json");
+const getToken = req => req.cookies.idtoken;
+
+router.use(
+    jwt({
+        secret: config.secret,
+        getToken,
+        algorithms: ["HS256"],
+    }).unless({ path: ["/department/login"] })
+);
 
 router.use((req, res, next) => {
     if (req.auth === undefined || req.auth.type === "department") next();
