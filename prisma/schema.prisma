@@ -14,7 +14,7 @@ datasource db {
 }
 
 model Student {
-  rollNumber  String     @id
+  rollNumber  String
   name        String
   email       String     @unique
   branch      String
@@ -24,6 +24,8 @@ model Student {
   noDuesGiven Boolean    @default(false)
   fines       Fines[]    @relation("Fines")
   requests    Requests[] @relation("Requests")
+
+  @@id([rollNumber, email])
 }
 
 enum Role {
@@ -43,11 +45,13 @@ model Department {
 
 model Fines {
   fineId            String     @id @default(uuid())
-  Student           Student    @relation("Fines", fields: [studentRollNumber], references: [rollNumber])
+  Student           Student    @relation("Fines", fields: [studentRollNumber, studentEmail], references: [rollNumber, email])
   studentRollNumber String
+  studentEmail      String
   Department        Department @relation("Fines", fields: [departmentDeptId], references: [deptId])
   departmentDeptId  String
   dateOfCreation    DateTime   @default(now())
+  amount            Int        @default(0)
   deadline          DateTime
   reason            String     @db.VarChar(300)
   damageProof       String?
@@ -64,8 +68,9 @@ enum Status {
 
 model Requests {
   requestId         String     @id @default(uuid())
-  Student           Student    @relation("Requests", fields: [studentRollNumber], references: [rollNumber])
+  student           Student    @relation("Requests", fields: [studentRollNumber, studentEmail], references: [rollNumber, email])
   studentRollNumber String
+  studentEmail      String
   Department        Department @relation("Requests", fields: [departmentDeptId], references: [deptId])
   departmentDeptId  String
   dateOfRequest     DateTime   @default(now())

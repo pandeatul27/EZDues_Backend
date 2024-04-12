@@ -1,0 +1,4 @@
+{
+	"secret": "THIS IS USED TO SIGN AND VERIFY JWTs",
+	"saltRounds": 10
+}
