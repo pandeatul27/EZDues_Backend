@@ -303,7 +303,7 @@ async function login(req, res) {
                     expiresIn: "24h",
                 }
             );
-            res.cookie("idtoken", token, { httpOnly: true });
+            res.cookie("idtoken", token, { httpOnly: true, sameSite: "Lax"  });
             res.sendStatus(200);
         } else {
             res.status(401).json("Incorrect password");
