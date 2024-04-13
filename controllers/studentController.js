@@ -38,25 +38,24 @@ async function getRequests(req, res) {
 async function initiateRequest(req, res) {
     try {
         const { email } = req.auth.preferred_username;
+        const { deptId } = req.body.deptId;
 
         const fines = await prisma.Fines.findMany({
-             where: {
-                 studentEmail: email,
-             },
-         });
+            where: {
+                studentEmail: email,
+            },
+        });
 
         const requests = [];
-        fines.forEach((fine) => {
-            requests.push({
-                    Student: { connect: { rollNumber } },
-                    studentRollNumber: rollNumber,
-                    Department: { connect: { deptId: fine.departmentDeptId } },
-                    departmentDeptId: fine.departmentDeptId,
-                    dateOfRequest: new Date(),
-                    isApproved: false,
-                    dateOfApproval: null,
-            });
+
+        requests.push({
+            studentRollNumber: rollNumber,
+            departmentDeptId: deptId,
+            dateOfRequest: new Date(),
+            isApproved: false,
+            dateOfApproval: null,
         });
+
         await prisma.Requests.createMany({ data: requests });
 
         res.status(200).json({ message: "Request initiated successfully." });
