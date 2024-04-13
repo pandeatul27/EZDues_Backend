@@ -12,7 +12,12 @@
   PORT=5000
   NODE_ENV='development' # would be subject to change.
   ```
-
+- Create `auth.env` with following content
+  
+  ```env
+  EMAIL= <systemEmail> /* the email from which you want to send email */
+  PASSWORD = <systemEmailPassword> /* password of above email */
+  ```
 - Install MySQL server and MySQL Workbench.
 
 - Create Database as per the URI set in the env

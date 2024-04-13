@@ -2,6 +2,8 @@ const { PrismaClient } = require("@prisma/client");
 const jwt = require("jsonwebtoken");
 const config = require("../config.json");
 const bcrypt = require("bcrypt");
+const nodemailer = require("nodemailer");
+require("dotenv").config({ path: "./auth.env" });
 
 const prisma = new PrismaClient().$extends({
     query: {
@@ -21,7 +23,76 @@ const prisma = new PrismaClient().$extends({
         },
     },
 });
+async function sendReminder(req, res) {
+    const deptId = req.auth.deptId;
+    try {
+        let transporter = nodemailer.createTransport({
+            host: "smtp-mail.outlook.com", // hostname
+            service: "outlook", // service name
+            secureConnection: false,
+            tls: {
+                ciphers: "SSLv3", // tls version
+            },
+            port: 5000, // port
+            auth: {
+                user: process.env.EMAIL,
+                pass: process.env.PASSWORD,
+            },
+        });
+        const fines = await prisma.Fines.findMany({
+            where: {
+                departmentDeptId: deptId,
+            },
+        });
 
+        fines.forEach(async (fine) => {
+            if (fine.status != "Approved" && fine.status != "Pending") {
+                const student = await prisma.Student.findUnique({
+                    where: { rollNumber: fine.studentRollNumber },
+                });
+                var mailOptions = {
+                    from: process.env.EMAIL,
+                    to: student.email,
+                    subject: "Reminder for Fine Payment",
+                    html: `This is a Reminder that you have a Pending Fine with details as follows.<br><br>
+                   
+            <table border="1">
+                <tr>
+                    <th>Fine ID</th> <td> ${fine.fineId}</td>
+                </tr>
+                <tr>
+                    <th>Department</th> <td> ${fine.departmentDeptId}</td>
+                </tr>
+                <tr>
+                    <th>Reason</th> <td> ${fine.reason}</td>
+                </tr>
+                <tr>
+                    <th>Deadline</th> <td> ${fine.amount}</td>
+                </tr>
+                <tr>
+                    <th>Status</th> <td> ${fine.status}</td>
+                </tr>
+            </table><br>
+        Please Pay Them As Soon As Possible.<br>
+        Regards,<br>
+        EZDues Team
+        `,
+                };
+                transporter.sendMail(mailOptions, function (error, info) {
+                    if (error) {
+                        console.log(error);
+                    } else {
+                        console.log("Email sent: " + info.response);
+                    }
+                });
+            }
+        });
+        res.sendStatus(200);
+    } catch (err) {
+        console.log(err);
+        res.sendStatus(500);
+    }
+}
 async function getFines(req, res) {
     const deptId = req.auth.deptId;
     try {
@@ -30,7 +101,7 @@ async function getFines(req, res) {
                 departmentDeptId: deptId,
             },
         });
-        console.log(fines);
+        // console.log(fines);
         const requests = await prisma.Requests.findMany({
             where: {
                 departmentDeptId: deptId,
@@ -42,7 +113,7 @@ async function getFines(req, res) {
         // i am assuming yes to both and doing it
 
         const totalFine = fines.reduce((acc, fine) => acc + fine.amount, 0);
-        console.log(totalFine);
+        // console.log(totalFine);
         const settledFine = fines
             .filter((fine) => fine.status === "Approved")
             .reduce((acc, fine) => acc + fine.amount, 0);
@@ -59,7 +130,7 @@ async function getFines(req, res) {
             (fine) => fine.status === "Pending"
         ).length;
         const numberOfFines = fines.length;
-        console.log(pendingNoDues, pendingFines);
+        // console.log(pendingNoDues, pendingFines);
         res.json({
             totalFine,
             settledFine,
@@ -76,19 +147,21 @@ async function getFines(req, res) {
 }
 
 async function getStudent(req, res) {
+    const deptId = req.auth.deptId;
     try {
         const students = await prisma.Student.findMany();
+
         res.json(students);
     } catch (error) {
         res.status(500).json({ error: "Internal Server Error" });
     }
 }
 async function getSpecificStudent(req, res) {
-    const id = req.params.rollNo;
+    const id = decodeURIComponent(req.params.email);
     try {
         const student = await prisma.Student.findUnique({
             where: {
-                rollNumber: id,
+                email: id,
             },
         });
         if (!student) {
@@ -96,23 +169,36 @@ async function getSpecificStudent(req, res) {
         }
         res.json(student);
     } catch (error) {
+        console.log(error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 }
 
 async function addFine(req, res) {
     const newFine = req.body;
+    newFine.departmentDeptId = req.auth.deptId;
+    // console.log(newFine);
     try {
         const createdFine = await prisma.Fines.create({
             data: newFine,
         });
+        const department = await prisma.Department.findUnique({
+            where: {
+                deptId: req.auth.deptId,
+            },
+        });
+        if (department.autoApprove) {
+            await approvalBulk(req, res);
+            console.log("Auto-approval is on while creating fine.");
+        }
         res.status(201).json(createdFine);
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 }
 async function fineApproval(req, res) {
-    const { studentRoll, fineId } = req.params;
+    const { studentRoll, fineId, decision } = req.params;
     const deptId = req.auth.deptId;
     try {
         const payments = await prisma.Payments.findMany({
@@ -121,7 +207,7 @@ async function fineApproval(req, res) {
             },
         });
 
-        const status = payments.length > 0 ? "Approved" : "Rejected";
+        const status = decision == "approve" ? "Approved" : "Rejected";
 
         const updatedFine = await prisma.Fines.update({
             where: {
@@ -144,8 +230,23 @@ async function getRequests(req, res) {
         const requests = await prisma.Requests.findMany({
             where: {
                 departmentDeptId: deptId, // corresponding to that department we opened
+                isApproved: false,
             },
         });
+        for (let i = 0; i < requests.length; i++) {
+            studentRoll = requests[i].studentRollNumber;
+            const fines = await prisma.Fines.findMany({
+                where: {
+                    studentRollNumber: studentRoll,
+                    departmentDeptId: deptId,
+                },
+            });
+
+            const allFinesApproved = fines.every(
+                (fine) => fine.status === "Approved"
+            );
+            requests[i].pendingDues = !allFinesApproved;
+        }
         res.json(requests);
     } catch (error) {
         console.error("Error fetching requests:", error);
@@ -157,7 +258,6 @@ async function getRequests(req, res) {
 async function requestApproval(req, res) {
     const { studentRoll, reqId } = req.params;
     const deptId = req.auth.deptId;
-
     try {
         const requests = await prisma.Requests.findMany({
             where: {
@@ -187,6 +287,8 @@ async function requestApproval(req, res) {
                 },
             });
             res.json({ message: "Request table updated successfully" });
+        } else {
+            res.status(405).json({ message: "All fines not approved yet" });
         }
     } catch (error) {
         res.status(500).json({
@@ -222,7 +324,7 @@ async function approvalBulk(req, res) {
                     (fine) => fine.status === "Approved"
                 );
             }
-            console.log(fines.length, allFinesPaid);
+            // console.log(fines.length, allFinesPaid);
             if (allFinesPaid) {
                 //all requests
                 //will be approved via todays
@@ -245,7 +347,8 @@ async function approvalBulk(req, res) {
         });
     }
 }
-async function setAutoApprove(req, res) {
+
+async function toggleAutoApprove(req, res) {
     const deptId = req.auth.deptId;
     try {
         let department = await prisma.Department.findMany({
@@ -258,7 +361,7 @@ async function setAutoApprove(req, res) {
                 deptId: deptId,
             },
             data: {
-                autoApprove: !department.autoApprove,
+                autoApprove: !department[0].autoApprove,
             },
         });
         if (department.autoApprove) {
@@ -273,14 +376,29 @@ async function setAutoApprove(req, res) {
         });
     }
 }
-
+async function getAutoApprove(req, res) {
+    const deptId = req.auth.deptId;
+    try {
+        let department = await prisma.Department.findMany({
+            where: {
+                deptId: deptId,
+            },
+        });
+        res.json({ autoApprove: department[0].autoApprove });
+    } catch (error) {
+        console.log("Internal server error : ", error);
+        res.status(500).json({
+            error: "Internal Server Error while checking auto-approve",
+        });
+    }
+}
 async function login(req, res) {
     const { deptName, username, password } = req.body;
     if (username === undefined || password === undefined) {
         res.status(422).json("Enter username and password");
         return;
     }
-    console.log(username, password);
+    // console.log(username, password);
     const department = await prisma.Department.findUnique({
         where: {
             username,
@@ -303,14 +421,13 @@ async function login(req, res) {
                     expiresIn: "24h",
                 }
             );
-            res.cookie("idtoken", token, { httpOnly: true, sameSite: "Lax"  });
+            res.cookie("idtoken", token, { httpOnly: true, sameSite: "Lax" });
             res.sendStatus(200);
         } else {
             res.status(401).json("Incorrect password");
         }
     });
 }
-
 module.exports = {
     getFines,
     getStudent,
@@ -320,7 +437,9 @@ module.exports = {
     getRequests,
     requestApproval,
     approvalBulk,
-    setAutoApprove,
+    setAutoApprove: toggleAutoApprove,
     login,
+    getAutoApprove,
+    sendReminder,
 };
 /* vi: set et sw=4: */
