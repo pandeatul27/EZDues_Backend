@@ -35,6 +35,5 @@ router.get("/requests", studentController.getRequests);
 router.post("/initiate-request", studentController.initiateRequest);
 router.post("/:fineId/addPaymentProof", studentController.addPaymentProof);
 
-
 module.exports = router;
 /* vi: set et sw=4: */
