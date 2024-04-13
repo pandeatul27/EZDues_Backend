@@ -73,9 +73,9 @@ async function sendReminder(req, res) {
                     <th>Status</th> <td> ${fine.status}</td>
                 </tr>
             </table><br>
-        Please Pay Them As Soon As Possible.<br>
-        Regards,<br>
-        EZDues Team
+            Please Pay Them As Soon As Possible.<br>
+            Regards,<br>
+            EZDues Team
         `,
                 };
                 transporter.sendMail(mailOptions, function (error, info) {

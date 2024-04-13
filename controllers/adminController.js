@@ -112,6 +112,7 @@ async function addDepartments(req, res) {
 }
 
 async function bulkRegistration(req, res) {
+    // console.log(req.files.file.tempFilePath);
     try {
         // Check if a CSV file was uploaded
         if (!req.files.file) {
@@ -122,11 +123,11 @@ async function bulkRegistration(req, res) {
         // and then to push it to db
 
         const students = [];
-
         // Read the uploaded CSV file
         fs.createReadStream(req.files.file.tempFilePath)
             .pipe(csvParser())
             .on("data", (row) => {
+                console.log(row.email);
                 // Process each row of the CSV file
                 students.push({
                     rollNumber: row.rollNumber,
@@ -157,31 +158,19 @@ async function bulkRegistration(req, res) {
 
 async function registerStudents(req, res) {
     try {
-        const students = req.body; // Assuming the request body contains an array of student objects
-
-        // Process each student and assign them to departments based on their role
-        const registrations = await Promise.all(
-            students.map(async (student) => {
-                const { rollNumber, name, email, branch, batch, role } =
-                    student;
-
-                // If a department is assigned, create the student record and associate them with the department
-
-                const createdStudent = await prisma.Student.create({
-                    data: {
-                        rollNumber,
-                        name,
-                        email,
-                        branch,
-                        batch,
-                        role,
-                    },
-                });
-                return createdStudent;
-            })
-        );
-
-        res.status(201).json(registrations.filter(Boolean)); // Filter out null values and return the successful registrations
+        const { rollNumber, name, email, branch, batch, role } = req.body;
+        // Create the student record
+        const createdStudent = await prisma.Student.create({
+            data: {
+                rollNumber,
+                name,
+                email,
+                branch,
+                batch,
+                role,
+            },
+        });
+        res.status(201).json(createdStudent);
     } catch (error) {
         console.error("Error registering students:", error);
         res.sendStatus(500);
@@ -249,6 +238,15 @@ async function makeFinalYearEligible(req, res) {
         });
     } catch (error) {
         console.error("Error making final year students eligible:", error);
+        res.sendStatus(500);
+    }
+}
+async function getDepartments(req, res) {
+    try {
+        const departments = await prisma.Department.findMany();
+        res.status(200).json(departments);
+    } catch (error) {
+        console.error("Error showing departments", error);
         res.sendStatus(500);
     }
 }
@@ -337,6 +335,15 @@ async function login(req, res) {
         }
     });
 }
+async function getStudents(req, res) {
+    try {
+        const students = await prisma.Student.findMany();
+        res.status(200).json(students);
+    } catch (error) {
+        console.error("Error showing departments", error);
+        res.sendStatus(500);
+    }
+}
 
 // other admin-related controller functions...
 
@@ -349,6 +356,8 @@ module.exports = {
     makeFinalYearEligible,
     autoApprove,
     login,
+    getDepartments,
+    getStudents,
     // export other admin-related controller functions...
 };
 /* vi: set et sw=4: */
